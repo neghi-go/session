@@ -147,4 +147,4 @@ func (j *JWT) SetField(key string, value interface{}) error {
 	return j.token.Set(key, value)
 }
 
-var _ sessions.Session = (*JWT)(nil)
+var _ session.Session = (*JWT)(nil)
