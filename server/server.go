@@ -114,7 +114,7 @@ func (s *Server) Validate(key string) error {
 	return nil
 }
 
-var _ sessions.Session = (*Server)(nil)
+var _ session.Session = (*Server)(nil)
 
 func (s *Server) generateSession() *Session {
 	scs := &Session{
