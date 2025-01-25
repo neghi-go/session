@@ -1,8 +1,7 @@
-package mongodb
+package store
 
 import (
 	"context"
-	"os"
 	"testing"
 	"time"
 
@@ -11,9 +10,7 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 )
 
-var test_url string
-
-func TestMain(m *testing.M) {
+func TestMongoStore(t *testing.T) {
 	client := testcontainers.ContainerRequest{
 		Image:        "mongo:8.0",
 		ExposedPorts: []string{"27017/tcp"},
@@ -23,21 +20,13 @@ func TestMain(m *testing.M) {
 		ContainerRequest: client,
 		Started:          true,
 	})
-	if err != nil {
-		panic(err)
-	}
+	require.NoError(t, err)
 
-	test_url, _ = mongoClient.Endpoint(context.Background(), "")
+	test_url, _ := mongoClient.Endpoint(context.Background(), "")
 
-	exitVal := m.Run()
-	_ = mongoClient.Terminate(context.Background())
-	os.Exit(exitVal)
-}
-
-func TestMongoStore(t *testing.T) {
 	testkey := "test-key"
 	testVal := []byte("test-value")
-	ms, err := New(WithURL("mongodb://"+test_url), WithTTL(time.Second*5))
+	ms, err := NewMongoDBStore(WithMongoURL("mongodb://"+test_url), WithTTL(time.Second*5))
 	require.NoError(t, err)
 
 	t.Run("Test Normal Read/Write/Delete", func(t *testing.T) {
@@ -56,4 +45,7 @@ func TestMongoStore(t *testing.T) {
 			assert.NoError(t, err)
 		})
 	})
+
+	err = mongoClient.Terminate(context.Background())
+	require.NoError(t, err)
 }

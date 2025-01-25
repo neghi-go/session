@@ -1,12 +1,10 @@
-package memory
+package store
 
 import (
 	"context"
 	"errors"
 	"sync"
 	"time"
-
-	"github.com/neghi-go/session/store"
 )
 
 type items struct {
@@ -19,7 +17,7 @@ type Memory struct {
 	items map[string]items
 }
 
-func New() *Memory {
+func NewMemoryStore() *Memory {
 	return &Memory{
 		mu:    sync.RWMutex{},
 		items: make(map[string]items, 0),
@@ -59,4 +57,4 @@ func (m *Memory) Set(_ context.Context, key string, value []byte, ttl time.Durat
 	return nil
 }
 
-var _ store.Store = (*Memory)(nil)
+var _ Store = (*Memory)(nil)

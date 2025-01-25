@@ -1,14 +1,13 @@
-package redis
+package store
 
 import (
 	"context"
 	"time"
 
-	"github.com/neghi-go/session/store"
 	"github.com/redis/go-redis/v9"
 )
 
-type Options func(*Redis)
+type RedisOptions func(*Redis)
 
 type Redis struct {
 	client *redis.Client
@@ -18,7 +17,7 @@ type Redis struct {
 	prefix string
 }
 
-func WithURL(url string) Options {
+func WithRedisURL(url string) RedisOptions {
 	opt, err := redis.ParseURL(url)
 	if err != nil {
 		panic(err)
@@ -28,7 +27,7 @@ func WithURL(url string) Options {
 	}
 }
 
-func WithPrefix(prefix string) Options {
+func WithPrefix(prefix string) RedisOptions {
 	return func(r *Redis) {
 		r.prefix = prefix
 	}
@@ -54,7 +53,7 @@ func (r *Redis) Set(ctx context.Context, key string, value []byte, ttl time.Dura
 	return r.client.Set(ctx, r.prefix+key, value, ttl).Err()
 }
 
-func New(opts ...Options) (*Redis, error) {
+func NewRedisStore(opts ...RedisOptions) (*Redis, error) {
 	cfg := &Redis{
 		prefix: "sessions:",
 	}
@@ -72,4 +71,4 @@ func New(opts ...Options) (*Redis, error) {
 	return cfg, nil
 }
 
-var _ store.Store = (*Redis)(nil)
+var _ Store = (*Redis)(nil)

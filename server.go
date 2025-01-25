@@ -1,4 +1,4 @@
-package server
+package session
 
 import (
 	"context"
@@ -7,11 +7,17 @@ import (
 	"sync"
 	"time"
 
-	"github.com/neghi-go/session"
 	"github.com/neghi-go/session/store"
-	"github.com/neghi-go/session/store/memory"
 	"github.com/neghi-go/utilities"
 )
+
+type ServerOptions func(*Server)
+
+func WithStore(store store.Store) ServerOptions {
+	return func(s *Server) {
+		s.store = store
+	}
+}
 
 type Server struct {
 	store store.Store
@@ -28,7 +34,7 @@ type Server struct {
 	path     string
 	sameSite http.SameSite
 
-	session *Session
+	session *ServerSessionModel
 }
 
 // DelField implements sessions.Session.
@@ -47,9 +53,9 @@ func (s *Server) SetField(key string, value interface{}) error {
 	panic("unimplemented")
 }
 
-func NewServerSession(opts ...Options) *Server {
+func NewServerSession(opts ...ServerOptions) *Server {
 	cfg := &Server{
-		store: memory.New(),
+		store: store.NewMemoryStore(),
 		keyGenFunc: func() string {
 			return utilities.Generate(16)
 		},
@@ -104,7 +110,7 @@ func (s *Server) Validate(key string) error {
 	if err != nil {
 		return err
 	}
-	s.session = &Session{
+	s.session = &ServerSessionModel{
 		id: key,
 		data: &Data{
 			mu:   &sync.RWMutex{},
@@ -114,10 +120,10 @@ func (s *Server) Validate(key string) error {
 	return nil
 }
 
-var _ session.Session = (*Server)(nil)
+var _ Session = (*Server)(nil)
 
-func (s *Server) generateSession() *Session {
-	scs := &Session{
+func (s *Server) generateSession() *ServerSessionModel {
+	scs := &ServerSessionModel{
 		id: s.keyGenFunc(),
 		data: &Data{
 			mu:   &sync.RWMutex{},

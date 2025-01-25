@@ -1,4 +1,4 @@
-package server
+package session
 
 import "sync"
 
@@ -29,7 +29,7 @@ func (d *Data) Reset(key string) {
 	d.data = make(map[string]interface{})
 }
 
-type Session struct {
+type ServerSessionModel struct {
 	id   string
 	data *Data
 }

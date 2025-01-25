@@ -1,4 +1,4 @@
-package memory
+package store
 
 import (
 	"context"
@@ -12,7 +12,7 @@ func TestMemoryStore(t *testing.T) {
 	testValue := []byte("hello")
 	testKey := "test-key"
 
-	m := New()
+	m := NewMemoryStore()
 
 	t.Run("Test Save", func(t *testing.T) {
 		err := m.Set(context.Background(), testKey, testValue, time.Second*10)

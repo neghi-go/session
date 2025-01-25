@@ -1,4 +1,4 @@
-package jwt
+package session
 
 import (
 	"crypto/rsa"
@@ -11,7 +11,6 @@ import (
 
 	"github.com/lestrrat-go/jwx/v2/jwa"
 	"github.com/lestrrat-go/jwx/v2/jwt"
-	"github.com/neghi-go/session"
 	"github.com/neghi-go/session/store"
 )
 
@@ -30,7 +29,7 @@ func (a Algo) String() string {
 	return string(a)
 }
 
-type Options func(*JWT)
+type JWTOptions func(*JWT)
 
 type JWT struct {
 	issuer      string
@@ -45,7 +44,7 @@ type JWT struct {
 	store store.Store
 }
 
-func New(opts ...Options) (*JWT, error) {
+func NewJWTSession(opts ...JWTOptions) (*JWT, error) {
 	cfg := &JWT{
 		algo:       RS256,
 		issuer:     "default-issuer",
@@ -69,7 +68,7 @@ func New(opts ...Options) (*JWT, error) {
 
 // WithPrivateKey expects a base64 encoded string of the
 // private key
-func WithPrivateKey(private_key string) Options {
+func WithPrivateKey(private_key string) JWTOptions {
 	pri, _ := base64.StdEncoding.DecodeString(private_key)
 	block, _ := pem.Decode(pri)
 	privateKey, _ := x509.ParsePKCS1PrivateKey(block.Bytes)
@@ -80,7 +79,7 @@ func WithPrivateKey(private_key string) Options {
 
 // WithPublicKey expects a base64 encoded string of the
 // public key
-func WithPublicKey(public_key string) Options {
+func WithPublicKey(public_key string) JWTOptions {
 	pub, _ := base64.StdEncoding.DecodeString(public_key)
 	block, _ := pem.Decode(pub)
 	publicKey, _ := x509.ParsePKIXPublicKey(block.Bytes)
@@ -89,19 +88,19 @@ func WithPublicKey(public_key string) Options {
 	}
 }
 
-func SetIssuer(val string) Options {
+func SetIssuer(val string) JWTOptions {
 	return func(j *JWT) {
 		j.issuer = val
 	}
 }
 
-func SetAudience(val string) Options {
+func SetAudience(val string) JWTOptions {
 	return func(j *JWT) {
 		j.audience = val
 	}
 }
 
-func SetExpiration(exp int64) Options {
+func SetExpiration(exp int64) JWTOptions {
 	return func(j *JWT) {
 		j.expireTime = exp
 	}
@@ -147,4 +146,4 @@ func (j *JWT) SetField(key string, value interface{}) error {
 	return j.token.Set(key, value)
 }
 
-var _ session.Session = (*JWT)(nil)
+var _ Session = (*JWT)(nil)

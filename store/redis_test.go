@@ -1,8 +1,7 @@
-package redis
+package store
 
 import (
 	"context"
-	"os"
 	"testing"
 	"time"
 
@@ -11,9 +10,7 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 )
 
-var test_url string
-
-func TestMain(m *testing.M) {
+func TestRedisStore(t *testing.T) {
 	client := testcontainers.ContainerRequest{
 		Image:        "redis:alpine",
 		ExposedPorts: []string{"6379/tcp"},
@@ -22,20 +19,12 @@ func TestMain(m *testing.M) {
 		ContainerRequest: client,
 		Started:          true,
 	})
-	if err != nil {
-		panic(err)
-	}
 
-	test_url, _ = redisClient.Endpoint(context.Background(), "")
-	exitVal := m.Run()
-	_ = redisClient.Terminate(context.Background())
-	os.Exit(exitVal)
-}
+	test_url, _ := redisClient.Endpoint(context.Background(), "")
 
-func TestRedisStore(t *testing.T) {
 	testKey := "test-key"
 	testValue := []byte("hello")
-	rc, err := New(WithURL("redis://" + test_url))
+	rc, err := NewRedisStore(WithRedisURL("redis://" + test_url))
 	require.NoError(t, err)
 
 	t.Run("Test Set", func(t *testing.T) {
@@ -53,4 +42,7 @@ func TestRedisStore(t *testing.T) {
 		err := rc.Del(context.Background(), testKey)
 		require.NoError(t, err)
 	})
+
+	err = redisClient.Terminate(context.Background())
+	require.NoError(t, err)
 }

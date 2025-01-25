@@ -1,37 +1,36 @@
-package mongodb
+package store
 
 import (
 	"context"
 	"errors"
 	"time"
 
-	"github.com/neghi-go/session/store"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
-type Options func(*Mongo)
+type MongoOptions func(*Mongo)
 
-func WithURL(url string) Options {
+func WithMongoURL(url string) MongoOptions {
 	return func(m *Mongo) {
 		m.url = url
 	}
 }
 
-func WithDatabase(database string) Options {
+func WithDatabase(database string) MongoOptions {
 	return func(m *Mongo) {
 		m.database = database
 	}
 }
 
-func WithCollection(collection string) Options {
+func WithCollection(collection string) MongoOptions {
 	return func(m *Mongo) {
 		m.collection = collection
 	}
 }
 
-func WithTTL(ttl time.Duration) Options {
+func WithTTL(ttl time.Duration) MongoOptions {
 	return func(m *Mongo) {
 		m.ttl = ttl
 	}
@@ -99,7 +98,7 @@ func (m *Mongo) Set(ctx context.Context, key string, value []byte, _ time.Durati
 	return nil
 }
 
-func New(opts ...Options) (*Mongo, error) {
+func NewMongoDBStore(opts ...MongoOptions) (*Mongo, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 	cfg := &Mongo{
@@ -142,4 +141,4 @@ func New(opts ...Options) (*Mongo, error) {
 	return cfg, nil
 }
 
-var _ store.Store = (*Mongo)(nil)
+var _ Store = (*Mongo)(nil)

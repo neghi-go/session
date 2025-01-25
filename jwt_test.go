@@ -1,4 +1,4 @@
-package jwt
+package session
 
 import (
 	"testing"
@@ -12,17 +12,17 @@ var (
 )
 
 func TestNewJWTWithoutPrivateKey(t *testing.T) {
-	_, err := New(WithPublicKey(pubKey))
+	_, err := NewJWTSession(WithPublicKey(pubKey))
 	require.Error(t, err)
 }
 
 func TestNewJWTWithoutPublicKey(t *testing.T) {
-	_, err := New(WithPrivateKey(privKey))
+	_, err := NewJWTSession(WithPrivateKey(privKey))
 	require.Error(t, err)
 }
 
 func TestNewJWT(t *testing.T) {
-	jwt, err := New(WithPrivateKey(privKey), WithPublicKey(pubKey))
+	jwt, err := NewJWTSession(WithPrivateKey(privKey), WithPublicKey(pubKey))
 
 	require.NoError(t, err)
 	require.NotEmpty(t, jwt)
