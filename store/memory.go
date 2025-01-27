@@ -13,13 +13,13 @@ type items struct {
 }
 
 type Memory struct {
-	mu    sync.RWMutex
+	mu    *sync.RWMutex
 	items map[string]items
 }
 
 func NewMemoryStore() *Memory {
 	return &Memory{
-		mu:    sync.RWMutex{},
+		mu:    &sync.RWMutex{},
 		items: make(map[string]items, 0),
 	}
 }

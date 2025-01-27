@@ -2,6 +2,8 @@ package session
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"net/http"
 	"sync"
@@ -57,7 +59,11 @@ func NewServerSession(opts ...ServerOptions) *Server {
 	cfg := &Server{
 		store: store.NewMemoryStore(),
 		keyGenFunc: func() string {
-			return utilities.Generate(16)
+			buf := make([]byte, 16)
+			if _, err := rand.Read(buf); err != nil {
+				panic(err)
+			}
+			return hex.EncodeToString(buf)
 		},
 		identifier:      "sessions-key",
 		sameSite:        http.SameSiteLaxMode,
@@ -75,18 +81,21 @@ func NewServerSession(opts ...ServerOptions) *Server {
 // Generate implements sessions.Session.
 func (s *Server) Generate(w http.ResponseWriter, subject string, params ...interface{}) error {
 	//Generate Session
-	session := s.generateSession()
-	session.data.Set("subject", subject)
+	s.generateSession()
+	s.session.data.Set("subject", subject)
 	for idx, data := range params {
-		session.data.Set(fmt.Sprint(idx), data)
+		s.session.data.Set(fmt.Sprint(idx), data)
 	}
-	s.persistToStore(context.Background())
+	err := s.persistToStore(context.Background())
+	if err != nil {
+		return err
+	}
 	//Send Cookie to
 	http.SetCookie(w, &http.Cookie{
 		Name:  s.identifier,
-		Value: session.id,
+		Value: s.session.id,
 
-		Expires:  time.Now().Add(s.absoluteTimeout * time.Second).UTC(),
+		Expires:  time.Now().Add(time.Duration(s.absoluteTimeout.Seconds()) * time.Second).UTC(),
 		Secure:   s.secure,
 		HttpOnly: s.httpOnly,
 
@@ -122,15 +131,15 @@ func (s *Server) Validate(key string) error {
 
 var _ Session = (*Server)(nil)
 
-func (s *Server) generateSession() *ServerSessionModel {
+func (s *Server) generateSession() {
 	scs := &ServerSessionModel{
 		id: s.keyGenFunc(),
 		data: &Data{
 			mu:   &sync.RWMutex{},
-			data: make(map[string]interface{}),
+			data: map[string]interface{}{},
 		},
 	}
-	return scs
+	s.session = scs
 }
 
 func (s *Server) persistToStore(ctx context.Context) error {

@@ -11,19 +11,8 @@ var (
 	pubKey  = "LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUlJQklUQU5CZ2txaGtpRzl3MEJBUUVGQUFPQ0FRNEFNSUlCQ1FLQ0FRQjgrci9IaWZGNnNYZm92UG1SM3FVbApHVE80TWEvcjllN2xXU3R6MFZpdE80NXI2bHlpSVRmczlTUmkxSUFRS1MrYk8ydFZNYTVFUmpqdVJrczBJWloxCjNkNTRvRVNSWFd1ZzlwYmxRZ2lDU2VtY0RnRlh1M1pJZGhJazlEYm9CcmY4RGVsdE52SFBEYzM1WTIzNWpUNFYKNW9IaUtYbmovQ1NXakNMQUJIOUZpeWZoNjRObHpGTERpOTl2NWN1S0JjYmZIcjMwdEY2S1F2TU1yQ0lMUXp4VgpUTkpjckxuSmRPMXdkVXhkKzRBSnloZlE3aE5lV2xodTFUREF3dlV3RUxzSHFoaEwvdktiK0h1TDBudDdvTFVnCkY4aEFJOENVMHIzVmtjUmZCTkR6d3pvajJqWG1mRkRIc1FCeUY2ZDM0VUlackJHSCsxQ2I0dlNhbW5QN3FuNzcKQWdNQkFBRT0KLS0tLS1FTkQgUFVCTElDIEtFWS0tLS0t"
 )
 
-func TestNewJWTWithoutPrivateKey(t *testing.T) {
-	_, err := NewJWTSession(WithPublicKey(pubKey))
-	require.Error(t, err)
-}
-
-func TestNewJWTWithoutPublicKey(t *testing.T) {
-	_, err := NewJWTSession(WithPrivateKey(privKey))
-	require.Error(t, err)
-}
-
 func TestNewJWT(t *testing.T) {
-	jwt, err := NewJWTSession(WithPrivateKey(privKey), WithPublicKey(pubKey))
+	jwt := NewJWTSession(WithRSA256(privKey, pubKey))
 
-	require.NoError(t, err)
 	require.NotEmpty(t, jwt)
 }

@@ -17,7 +17,8 @@ import (
 type Algo string
 
 const (
-	RS256 Algo = "RS256"
+	rs256 Algo = "RS256"
+	hs256 Algo = "HS256"
 )
 
 var (
@@ -39,52 +40,51 @@ type JWT struct {
 	private_key *rsa.PrivateKey
 	public_key  any
 
+	access_token  jwt.Token
+	refresh_token jwt.Token
+
 	token jwt.Token
+
+	secret []byte
 
 	store store.Store
 }
 
-func NewJWTSession(opts ...JWTOptions) (*JWT, error) {
+func NewJWTSession(opts ...JWTOptions) *JWT {
 	cfg := &JWT{
-		algo:       RS256,
+		algo:       hs256,
 		issuer:     "default-issuer",
 		audience:   "default-audience",
 		expireTime: 3 * 60,
+		secret:     []byte("default-secret"),
 	}
 
 	for _, opt := range opts {
 		opt(cfg)
 	}
-
-	if cfg.private_key == nil {
-		return nil, ErrPrivateKeyEmpty
-	}
-	if cfg.public_key == nil {
-		return nil, ErrPublicKeyEmpty
-	}
-
-	return cfg, nil
+	return cfg
 }
 
-// WithPrivateKey expects a base64 encoded string of the
-// private key
-func WithPrivateKey(private_key string) JWTOptions {
+// WithRS256 expects a base64 encoded string of the
+// private key and public key
+func WithRSA256(private_key, public_key string) JWTOptions {
 	pri, _ := base64.StdEncoding.DecodeString(private_key)
-	block, _ := pem.Decode(pri)
-	privateKey, _ := x509.ParsePKCS1PrivateKey(block.Bytes)
+	priblock, _ := pem.Decode(pri)
+	privateKey, _ := x509.ParsePKCS1PrivateKey(priblock.Bytes)
+	pub, _ := base64.StdEncoding.DecodeString(public_key)
+	pubblock, _ := pem.Decode(pub)
+	publicKey, _ := x509.ParsePKIXPublicKey(pubblock.Bytes)
 	return func(j *JWT) {
+		j.algo = rs256
 		j.private_key = privateKey
+		j.public_key = publicKey
 	}
 }
 
-// WithPublicKey expects a base64 encoded string of the
-// public key
-func WithPublicKey(public_key string) JWTOptions {
-	pub, _ := base64.StdEncoding.DecodeString(public_key)
-	block, _ := pem.Decode(pub)
-	publicKey, _ := x509.ParsePKIXPublicKey(block.Bytes)
+func WithSecret(secret string) JWTOptions {
 	return func(j *JWT) {
-		j.public_key = publicKey
+		j.algo = hs256
+		j.secret = []byte(secret)
 	}
 }
 
@@ -107,6 +107,7 @@ func SetExpiration(exp int64) JWTOptions {
 }
 
 func (j *JWT) Generate(w http.ResponseWriter, subject string, params ...interface{}) error {
+	var secret any
 	tok := jwt.New()
 	_ = tok.Set(jwt.IssuerKey, j.issuer)
 	_ = tok.Set(jwt.IssuedAtKey, time.Now().UTC())
@@ -114,7 +115,13 @@ func (j *JWT) Generate(w http.ResponseWriter, subject string, params ...interfac
 	_ = tok.Set(jwt.ExpirationKey, time.Now().Add(time.Second*time.Duration(j.expireTime)).UTC())
 	_ = tok.Set(jwt.SubjectKey, subject)
 
-	to, err := jwt.Sign(tok, jwt.WithKey(jwa.SignatureAlgorithm(j.algo), j.private_key))
+	if j.algo == rs256 {
+		secret = j.private_key
+	} else {
+		secret = j.secret
+	}
+
+	to, err := jwt.Sign(tok, jwt.WithKey(jwa.SignatureAlgorithm(j.algo), secret))
 	if err != nil {
 		return err
 	}
@@ -123,7 +130,13 @@ func (j *JWT) Generate(w http.ResponseWriter, subject string, params ...interfac
 }
 
 func (j *JWT) Verify(tok string) (jwt.Token, error) {
-	return jwt.Parse([]byte(tok), jwt.WithKey(j.algo, j.public_key))
+	var secret any
+	if j.algo == rs256 {
+		secret = j.public_key
+	} else {
+		secret = j.secret
+	}
+	return jwt.Parse([]byte(tok), jwt.WithKey(j.algo, secret))
 }
 
 func (j *JWT) Validate(key string) error { return nil }

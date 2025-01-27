@@ -26,7 +26,7 @@ func (d *Data) Del(key string) {
 }
 
 func (d *Data) Reset(key string) {
-	d.data = make(map[string]interface{})
+	d.data = make(map[string]interface{}, 0)
 }
 
 type ServerSessionModel struct {
